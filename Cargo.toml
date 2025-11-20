@@ -1,0 +1,24 @@
+[package]
+name = "bevy-volumetric-clouds"
+description = "A plugin for Bevy that saves and restores your camera position"
+repository = "https://github.com/evroon/bevy-volumetric-clouds"
+readme = "README.md"
+version = "0.1.0"
+publish = true
+authors = ["evroon"]
+edition = "2024"
+license = "MIT"
+keywords = ["bevy", "gamedev", "clouds", "volumetric-clouds", "raymarching"]
+categories = ["game-development"]
+
+[features]
+dev = ["bevy/dynamic_linking"]
+
+[dependencies]
+bevy = { version = "0.17.3", features=["file_watcher", "jpeg", "bevy_mesh"]}
+bevy_panorbit_camera = "0.33.0"
+wayland-sys = { version="0.31.7", features = ["dlopen"] }
+bevy_egui = "0.38.0"
+# bevy-where-was-i = "0.2.0"
+
+[dev-dependencies]
