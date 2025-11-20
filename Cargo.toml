@@ -1,0 +1,45 @@
+[package]
+name = "bevy-volumetric-clouds"
+description = "A plugin for Bevy that renders clouds using raymarching"
+repository = "https://github.com/evroon/bevy-volumetric-clouds"
+readme = "README.md"
+version = "0.1.0"
+publish = true
+authors = ["evroon"]
+edition = "2024"
+license = "MIT"
+keywords = ["bevy", "gamedev", "clouds", "volumetric-clouds", "raymarching"]
+categories = ["game-development"]
+
+[features]
+# dev = ["bevy/dynamic_linking"]
+dev = ["bevy/file_watcher"]
+debug = ["bevy/debug", "bevy_egui", "bevy/bevy_text"]
+fly_camera = []
+
+[dependencies]
+bevy = { version = "0.17.3", default-features = false, features = [
+  "bevy_camera",
+  "bevy_core_pipeline",
+  "bevy_light",
+  "bevy_log",
+  "bevy_pbr",
+  "bevy_post_process",
+  "bevy_render",
+  "bevy_shader",
+  "bevy_sprite_render",
+  "bevy_window",
+  "bevy_winit",
+  "hdr",
+  "tonemapping_luts",
+  "wayland",
+  "x11",
+  "zstd_rust",
+] }
+wayland-sys = { version = "0.31.7", features = ["dlopen"] }
+
+# Optional
+bevy_egui = { version = "0.38.0", default-features = false, optional = true, features = [
+  "default_fonts",
+  "render",
+] }
