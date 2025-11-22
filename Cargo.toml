@@ -3,7 +3,7 @@ name = "bevy-volumetric-clouds"
 description = "A plugin for Bevy that renders clouds using raymarching"
 repository = "https://github.com/evroon/bevy-volumetric-clouds"
 readme = "README.md"
-version = "0.1.1"
+version = "0.1.2"
 publish = true
 authors = ["evroon"]
 edition = "2024"
@@ -12,8 +12,7 @@ keywords = ["bevy", "gamedev", "clouds", "volumetric-clouds", "raymarching"]
 categories = ["game-development"]
 
 [features]
-# dev = ["bevy/dynamic_linking"]
-dev = ["bevy/file_watcher"]
+dev = ["bevy/dynamic_linking", "bevy/file_watcher", "bevy/embedded_watcher"]
 debug = ["bevy/debug", "bevy_egui", "bevy/bevy_text"]
 fly_camera = []
 

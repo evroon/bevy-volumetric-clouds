@@ -9,7 +9,6 @@ pub mod config;
 pub mod fly_camera;
 mod images;
 mod render;
-mod shader_utils;
 mod skybox;
 #[cfg(feature = "debug")]
 mod ui;
@@ -25,8 +24,7 @@ use crate::{
     compute::CameraMatrices,
     config::CloudsConfig,
     images::build_images,
-    render::CloudsMaterial,
-    shader_utils::ShaderCommonPlugin,
+    render::{CloudsMaterial, CloudsShaderPlugin},
     skybox::system::{SkyboxMaterials, init_skybox_mesh, setup_daylight, update_skybox_transform},
     uniforms::CloudsImage,
 };
@@ -41,11 +39,7 @@ pub struct CloudsPlugin;
 impl Plugin for CloudsPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(CloudsConfig::default())
-            .add_plugins((
-                CloudsComputePlugin,
-                ShaderCommonPlugin,
-                MaterialPlugin::<CloudsMaterial>::default(),
-            ))
+            .add_plugins((CloudsComputePlugin, CloudsShaderPlugin))
             .add_systems(Startup, (clouds_setup, setup_daylight))
             .add_systems(Update, (update_skybox_transform, update_camera_matrices));
         #[cfg(feature = "debug")]

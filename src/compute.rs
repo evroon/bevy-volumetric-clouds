@@ -1,7 +1,5 @@
-/// Controls the compute shader which renders the volumetric clouds.
-use std::borrow::Cow;
-
 use bevy::{
+    asset::load_embedded_asset,
     ecs::system::ResMut,
     prelude::*,
     render::{
@@ -18,6 +16,8 @@ use bevy::{
         texture::GpuImage,
     },
 };
+/// Controls the compute shader which renders the volumetric clouds.
+use std::borrow::Cow;
 
 use crate::config::CloudsConfig;
 
@@ -121,6 +121,10 @@ fn prepare_textures_bind_group(
     commands.insert_resource(CloudsImageBindGroup(bind_group));
 }
 
+/// The compute shading pipeline
+///
+/// Note that the compute shader is loaded in [`CloudsShaderPlugin`] so this resource depends on
+/// that plugin.
 #[derive(Resource)]
 struct CloudsPipeline {
     texture_bind_group_layout: BindGroupLayout,
@@ -133,9 +137,7 @@ impl FromWorld for CloudsPipeline {
     fn from_world(world: &mut World) -> Self {
         let render_device = world.resource::<RenderDevice>();
         let texture_bind_group_layout = CloudsImage::bind_group_layout(render_device);
-        let shader = world
-            .resource::<AssetServer>()
-            .load("shaders/clouds_compute.wgsl");
+        let shader = load_embedded_asset!(world, "shaders/clouds_compute.wgsl");
         let pipeline_cache = world.resource::<PipelineCache>();
 
         let entries = BindGroupLayoutEntries::sequential(

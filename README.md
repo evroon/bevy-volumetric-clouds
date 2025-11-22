@@ -64,6 +64,12 @@ There are a few features:
 - `debug`: enables an `egui` UI that allows you to tweak shader uniforms (parameters) in-game.
 - `fly_camera`: adds a `fly_camera` module that controls the camera using keyboard and mouse.
 
+## Bevy version compatibility
+
+| bevy | bevy-volumetric-clouds |
+|------|------------------------|
+| 0.17 | 0.1.*                  |
+
 ## Credits
 
 1. "The real-time volumetric cloudscapes of Horizon Zero Dawn" by Andrew Schneider and Nathan Vos ([article](https://www.guerrilla-games.com/read/the-real-time-volumetric-cloudscapes-of-horizon-zero-dawn))

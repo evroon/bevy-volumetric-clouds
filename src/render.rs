@@ -1,8 +1,10 @@
 use bevy::{
-    prelude::*, reflect::TypePath, render::render_resource::AsBindGroup, shader::ShaderRef,
+    asset::{AssetPath, embedded_asset, embedded_path},
+    prelude::*,
+    reflect::TypePath,
+    render::render_resource::AsBindGroup,
+    shader::{ShaderRef, load_shader_library},
 };
-
-const SHADER_ASSET_PATH: &str = "shaders/clouds.wgsl";
 
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub(crate) struct CloudsMaterial {
@@ -25,6 +27,21 @@ pub(crate) struct CloudsMaterial {
 
 impl Material for CloudsMaterial {
     fn fragment_shader() -> ShaderRef {
-        SHADER_ASSET_PATH.into()
+        ShaderRef::Path(
+            AssetPath::from_path_buf(embedded_path!("shaders/clouds.wgsl")).with_source("embedded"),
+        )
+    }
+}
+
+pub(crate) struct CloudsShaderPlugin;
+
+impl Plugin for CloudsShaderPlugin {
+    fn build(&self, app: &mut App) {
+        load_shader_library!(app, "shaders/common.wgsl");
+
+        embedded_asset!(app, "shaders/clouds.wgsl");
+        embedded_asset!(app, "shaders/clouds_compute.wgsl");
+
+        app.add_plugins(MaterialPlugin::<CloudsMaterial>::default());
     }
 }
