@@ -25,7 +25,7 @@ use crate::{
     config::CloudsConfig,
     images::build_images,
     render::{CloudsMaterial, CloudsShaderPlugin},
-    skybox::system::{SkyboxMaterials, init_skybox_mesh, setup_daylight, update_skybox_transform},
+    skybox::{SkyboxMaterials, init_skybox_mesh, setup_daylight, update_skybox_transform},
     uniforms::CloudsImage,
 };
 
