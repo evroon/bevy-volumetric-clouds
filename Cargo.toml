@@ -46,7 +46,6 @@ bevy_egui = { version = "0.38.0", default-features = false, optional = true, fea
   "render",
 ] }
 
-
 [lints.clippy]
 doc_markdown = "warn"
 manual_let_else = "warn"
