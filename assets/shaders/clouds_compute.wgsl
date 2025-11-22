@@ -103,6 +103,7 @@ fn get_cloud_map_density(pos: vec3f, normalized_height: f32) -> f32 {
 }
 
 fn get_normalized_height(pos: vec3f) -> f32 {
+    let clouds_height = config.clouds_top_height - config.clouds_bottom_height;
     return (length(pos) - (config.planet_radius + config.clouds_bottom_height)) / clouds_height;
 }
 
@@ -110,7 +111,6 @@ fn volumetric_shadow(origin: vec3f, ray_dot_sun: f32) -> f32 {
     var ray_step_size = config.clouds_shadow_raymarch_step_size;
     var distance_along_ray = ray_step_size * 0.5;
     var transmittance = 1.0;
-    let clouds_height = config.clouds_top_height - config.clouds_bottom_height;
 
     for (var step: u32 = 0; step < config.clouds_shadow_raymarch_steps_count; step++) {
         let pos = origin + config.sun_dir.xyz * distance_along_ray;
@@ -178,7 +178,6 @@ fn raymarch(_ray_origin: vec3f, ray_dir: vec3f, max_dist: f32) -> RaymarchResult
     var transmittance = 1.0;
 
     var dist = config.planet_radius;
-    let clouds_height = config.clouds_top_height - config.clouds_bottom_height;
 
     for (var step: u32 = 0; step < config.clouds_raymarch_steps_count; step++) {
         let world_position = ray_origin + dir_length * ray_dir;
