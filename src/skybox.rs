@@ -1,4 +1,4 @@
-use std::f32::consts::PI;
+use core::f32::consts::PI;
 
 use bevy::{light::light_consts::lux::FULL_DAYLIGHT, prelude::*};
 
@@ -31,7 +31,7 @@ impl<M: Material> SkyboxMaterials<M> {
 
 /// Spawn 6 sides of a cube with front faces facing inwards, representing the sky
 ///
-/// Make sure the standard_materials are unlit.
+/// Make sure the `standard_materials` are unlit.
 pub(crate) fn init_skybox_mesh<M: Material>(
     commands: &mut Commands,
     mut meshes: ResMut<Assets<Mesh>>,

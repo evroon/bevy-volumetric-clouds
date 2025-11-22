@@ -11,20 +11,20 @@ pub struct CloudsConfig {
     /// Radius of the planet the clouds encompass. Determines the curvature of the cloud layer near
     /// the horizon.
     pub planet_radius: f32,
-    /// Height of the clouds_bottom_height of the cloud layer.
+    /// Height of the `clouds_bottom_height` of the cloud layer.
     pub clouds_bottom_height: f32,
-    /// Height of the clouds_top_height of the cloud layer.
+    /// Height of the `clouds_top_height` of the cloud layer.
     pub clouds_top_height: f32,
-    /// clouds_coverage of 0.0 means no clouds (fair weather), 1.0 means full overcast
+    /// `clouds_coverage` of 0.0 means no clouds (fair weather), 1.0 means full overcast
     pub clouds_coverage: f32,
     /// Determines how much the base cloud structure is eroded by higher-frequency,
     /// lower-amplitude detail noise.
     pub clouds_detail_strength: f32,
     /// Softness of the clouds
     pub clouds_base_edge_softness: f32,
-    /// Softness of the clouds_bottom_height of the clouds
+    /// Softness of the `clouds_bottom_height` of the clouds
     pub clouds_bottom_softness: f32,
-    /// clouds_density of the clouds between 0.0 and 1.0
+    /// `clouds_density` of the clouds between 0.0 and 1.0
     pub clouds_density: f32,
     /// Step size of raymarching steps for calculating the shadow inside clouds
     pub clouds_shadow_raymarch_step_size: f32,
@@ -37,9 +37,9 @@ pub struct CloudsConfig {
     pub backward_scattering_g: f32,
     /// Factor between 0.0 and 1.0 for mixing forward and backward scattering.
     pub scattering_lerp: f32,
-    /// The color of ambient lighting at the clouds_top_height of the clouds.
+    /// The color of ambient lighting at the `clouds_top_height` of the clouds.
     pub clouds_ambient_color_top: Vec4,
-    /// The color of ambient lighting at the clouds_bottom_height of the clouds.
+    /// The color of ambient lighting at the `clouds_bottom_height` of the clouds.
     pub clouds_ambient_color_bottom: Vec4,
     /// Minimal transmittance in a ray, if transmittance is too low the ray is discarded.
     pub clouds_min_transmittance: f32,
