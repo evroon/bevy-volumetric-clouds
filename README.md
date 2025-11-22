@@ -22,8 +22,8 @@
 
 ![clouds](https://github.com/evroon/bevy-volumetric-clouds/raw/master/.github/screenshots/clouds.jpg)
 
-This is a plugin for [Bevy](https://github.com/bevyengine/bevy) that renders voluemtric clouds
-using raymarching using the method of Horizon Zero Dawn by Guerilla Games (see [credits](#credits)).
+This is a plugin for [Bevy](https://github.com/bevyengine/bevy) that renders volumetric clouds
+using the method of Horizon Zero Dawn by Guerilla Games (see [credits](#credits)).
 
 ## Usage
 
@@ -47,10 +47,10 @@ cargo run --example demo --features fly_camera,debug
 
 ## Limitations
 
-A few limiations apply for now and hopefully get fixed in the future:
+A few limitations apply for now and hopefully get fixed in the future:
 
 - There is no integration with Bevy's internal atmosphere rendering yet, this plugin uses a simple
-  sky rendering function
+  sky rendering function.
 - The clouds are drawn on a skybox that does not take the depth buffer into account yet. Therefore,
   it's not yet possible to "fly" into the clouds, the clouds are only visible from ground-level.
 - For now the clouds render resolution is set to 1920x1080 and can't be changed.
