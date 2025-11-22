@@ -1,4 +1,5 @@
-use bevy::prelude::*;
+//! A minimal example featuring clouds.
+use bevy::{prelude::*, render::view::Hdr};
 use bevy_volumetric_clouds::CloudsPlugin;
 
 fn main() {
@@ -9,5 +10,5 @@ fn main() {
 }
 
 fn setup(mut commands: Commands) {
-    commands.spawn(Camera3d::default());
+    commands.spawn((Camera3d::default(), Hdr));
 }
