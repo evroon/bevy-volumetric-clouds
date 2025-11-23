@@ -239,7 +239,7 @@ fn animate_text(
             ent.despawn();
         }
 
-        *writer.text(entity, 0) = format!("speed: {}", settings.speed).into();
+        *writer.text(entity, 0) = format!("speed: {}", settings.speed);
         *writer.color(entity, 0) =
             Color::linear_rgba(1.0, 1.0, 1.0, animate.time_to_live.clamp(0.0, 1.0)).into();
     }
