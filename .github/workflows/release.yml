@@ -26,7 +26,7 @@ jobs:
       - name: Install dev packages
         run: |
           sudo apt-get update;
-          sudo apt-get install --no-install-recommends
+          sudo apt-get install --no-install-recommends \
             libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
 
       - name: Build & run tests
