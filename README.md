@@ -20,7 +20,7 @@
   /></a>
 </p>
 
-![clouds](https://github.com/evroon/bevy-volumetric-clouds/raw/master/.github/screenshots/clouds.jpg)
+![clouds](https://github.com/evroon/bevy-volumetric-clouds/raw/master/.github/screenshots/clouds.png)
 
 This is a plugin for [Bevy](https://github.com/bevyengine/bevy) that renders volumetric clouds
 using the method of Horizon Zero Dawn by Guerilla Games (see [credits](#credits)).
