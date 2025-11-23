@@ -3,14 +3,14 @@ use bevy::prelude::*;
 #[derive(Resource, Clone, Copy)]
 /// The configuration that gets passed to the compute shader that renders the clouds.
 ///
+/// The resource gets added automatically by CloudsPlugin. However, you can overwrite it
+/// by inserting a new instance of it.
+///
 /// # Example
 ///
 /// ```rust ignore
 /// App::new()
-///     .add_plugins((
-///         DefaultPlugins,
-///         CloudsPlugin,
-///     ))
+///     .add_plugins((DefaultPlugins, CloudsPlugin))
 ///     .insert_resource(CloudsConfig {clouds_coverage: 0.6, ..default()})
 ///     .run();
 /// ```
