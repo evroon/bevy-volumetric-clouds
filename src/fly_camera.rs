@@ -1,9 +1,16 @@
 //! Camera movement logic based on <https://github.com/mcpar-land/bevy_fly_camera>
+//!
+//! See [`KeyBindings`] as to how to use this plugin.
 use bevy::{
     input::mouse::MouseMotion,
     prelude::*,
     window::{CursorGrabMode, CursorOptions, PrimaryWindow},
 };
+
+/// The duration for which the [`SpeedLabel`] is visible, in seconds.
+///
+/// It indicates the current speed value after you pressed `speed_increase` or `speed_decrease`.
+const SPEED_LABEL_VISIBLE_DURATION: f32 = 2.0;
 
 /// A marker component used in queries when you want flycams and not other cameras
 #[derive(Component)]
@@ -12,26 +19,30 @@ pub struct FlyCam;
 /// Configuration for which keyboard keys control which action
 /// Mouse is used for rotating the camera.
 /// Keyboard is used for moving the camera around.
+///
+/// You can press the Space key ([`toggle_grab_cursor`]) to toggle mouse control on/off.
 #[derive(Resource)]
 pub struct KeyBindings {
-    /// The [`KeyCode`] that increases the speed of the movement of the camera.
+    /// The [`KeyCode`] that increases the speed of the movement of the camera
+    /// (default: [`KeyCode::Digit2`]).
     pub speed_increase: KeyCode,
-    /// The [`KeyCode`] that decreases the speed of the movement of the camera.
+    /// The [`KeyCode`] that decreases the speed of the movement of the camera
+    /// (default: [`KeyCode::Digit1`]).
     pub speed_decrease: KeyCode,
-    /// The [`KeyCode`] that moves the camera forward.
+    /// The [`KeyCode`] that moves the camera forward (default: [`KeyCode::KeyW`]).
     pub move_forward: KeyCode,
-    /// The [`KeyCode`] that moves the camera backward.
+    /// The [`KeyCode`] that moves the camera backward (default: [`KeyCode::KeyS`]).
     pub move_backward: KeyCode,
-    /// The [`KeyCode`] that moves the camera left.
+    /// The [`KeyCode`] that moves the camera left (default: [`KeyCode::KeyA`]).
     pub move_left: KeyCode,
-    /// The [`KeyCode`] that moves the camera right.
+    /// The [`KeyCode`] that moves the camera right (default: [`KeyCode::KeyD`]).
     pub move_right: KeyCode,
-    /// The [`KeyCode`] that moves the camera upward.
+    /// The [`KeyCode`] that moves the camera upward (default: [`KeyCode::KeyR`]).
     pub move_ascend: KeyCode,
-    /// The [`KeyCode`] that moves the camera downward.
+    /// The [`KeyCode`] that moves the camera downward (default: [`KeyCode::KeyF`]).
     pub move_descend: KeyCode,
     /// The [`KeyCode`] that toggles between mouse (rotational) and keyboard (translational)
-    /// control.
+    /// control (default: [`KeyCode::Space`]).
     pub toggle_grab_cursor: KeyCode,
 }
 
@@ -44,8 +55,8 @@ impl Default for KeyBindings {
             move_backward: KeyCode::KeyS,
             move_left: KeyCode::KeyA,
             move_right: KeyCode::KeyD,
-            move_ascend: KeyCode::Space,
-            move_descend: KeyCode::ShiftLeft,
+            move_ascend: KeyCode::KeyR,
+            move_descend: KeyCode::KeyF,
             toggle_grab_cursor: KeyCode::Space,
         }
     }
@@ -172,23 +183,81 @@ fn player_look(
 }
 
 fn cursor_grab(
+    mut commands: Commands,
     keys: Res<ButtonInput<KeyCode>>,
     key_bindings: Res<KeyBindings>,
     primary_cursor_options: Single<&mut CursorOptions, With<PrimaryWindow>>,
     settings: Option<ResMut<MovementSettings>>,
+    mut help_text: Query<(Entity, &mut SpeedLabel)>,
 ) {
     if keys.just_pressed(key_bindings.toggle_grab_cursor) {
         toggle_grab_cursor(primary_cursor_options);
     }
 
     if let Some(mut settings) = settings {
+        let mut speed_changed = false;
+
         if keys.just_pressed(key_bindings.speed_increase) {
             settings.speed *= 2.0;
+            speed_changed = true;
         }
         if keys.just_pressed(key_bindings.speed_decrease) {
             settings.speed /= 2.0;
+            speed_changed = true;
+        }
+
+        if speed_changed {
+            if let Some(mut h) = help_text.iter_mut().next() {
+                h.1.time_to_live = SPEED_LABEL_VISIBLE_DURATION;
+            } else {
+                spawn_speed_text_node(&mut commands);
+            }
         }
     }
+}
+
+#[derive(Component)]
+struct SpeedLabel {
+    pub time_to_live: f32,
+}
+
+fn animate_text(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut help_text: Single<(Entity, &mut SpeedLabel)>,
+    settings: Option<Res<MovementSettings>>,
+    mut writer: TextUiWriter,
+) {
+    let entity = help_text.0;
+    let animate = &mut help_text.1;
+
+    if let Some(settings) = settings {
+        animate.time_to_live -= time.delta_secs();
+        if animate.time_to_live < 0.0 {
+            animate.time_to_live = 0.0;
+            let mut ent = commands.get_entity(entity).unwrap();
+            ent.despawn();
+        }
+
+        *writer.text(entity, 0) = format!("speed: {}", settings.speed);
+        *writer.color(entity, 0) =
+            Color::linear_rgba(1.0, 1.0, 1.0, animate.time_to_live.clamp(0.0, 1.0)).into();
+    }
+}
+
+fn spawn_speed_text_node(commands: &mut Commands) {
+    commands.spawn((
+        Text::new(""),
+        SpeedLabel {
+            time_to_live: SPEED_LABEL_VISIBLE_DURATION,
+        },
+        Node {
+            position_type: PositionType::Absolute,
+            left: px(12),
+            top: px(12),
+            ..default()
+        },
+    ));
 }
 
 /// A plugin to control a camera with "fly" keyboard controls
@@ -198,6 +267,9 @@ impl Plugin for FlyCameraPlugin {
         app.init_resource::<MovementSettings>()
             .init_resource::<RotationSettings>()
             .init_resource::<KeyBindings>()
-            .add_systems(Update, (player_look, cursor_grab, player_move));
+            .add_systems(
+                Update,
+                (player_look, cursor_grab, player_move, animate_text),
+            );
     }
 }
