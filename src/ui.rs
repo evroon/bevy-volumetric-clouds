@@ -116,7 +116,7 @@ pub fn clouds_ui(config: &mut CloudsConfig, ui: &mut Ui) {
     };
 }
 
-/// Add an [`egui::Window`]` that
+/// Add an [`egui::Window`] that
 pub fn ui_system(
     mut clouds_config: ResMut<CloudsConfig>,
     mut contexts: EguiContexts,

@@ -39,7 +39,7 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Run clippy
-        run: cargo clippy --workspace --all-targets --all-features
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
       - run: cargo publish --all-features --token ${CRATES_TOKEN}
         env:

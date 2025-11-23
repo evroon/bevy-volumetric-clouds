@@ -69,7 +69,7 @@ jobs:
         if: runner.os == 'linux'
 
       - name: Run clippy
-        run: cargo clippy --workspace --all-targets --all-features
+        run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Check format
         run: cargo fmt --all -- --check

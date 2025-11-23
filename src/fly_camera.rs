@@ -1,4 +1,4 @@
-/// Camera movement logic based on https://github.com/mcpar-land/bevy_fly_camera
+/// Camera movement logic based on <https://github.com/mcpar-land/bevy_fly_camera>
 use bevy::{
     input::mouse::MouseMotion,
     prelude::*,
@@ -122,7 +122,7 @@ fn player_move(
 
             velocity = velocity.normalize_or_zero();
 
-            transform.translation += velocity * time.delta_secs() * settings.speed
+            transform.translation += velocity * time.delta_secs() * settings.speed;
         }
     }
 }
