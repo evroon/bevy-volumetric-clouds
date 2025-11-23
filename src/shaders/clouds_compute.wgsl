@@ -1,6 +1,7 @@
 #import bevy_open_world::common
 
 const EPSILON = 0.000001;
+const MAX_DISTANCE = 1.0e9;
 const WORLEY_RESOLUTION = 32;
 const WORLEY_RESOLUTION_F32 = 32.0;
 
@@ -42,6 +43,12 @@ struct Config {
 @group(1) @binding(1) var clouds_atlas_texture: texture_storage_2d<rgba32float, read_write>;
 @group(1) @binding(2) var clouds_worley_texture: texture_storage_3d<rgba32float, read_write>;
 @group(1) @binding(3) var sky_texture: texture_storage_2d<rgba32float, read_write>;
+
+struct Ray {
+    step_distance: f32,
+    dir_length: f32,
+    start: f32
+}
 
 struct RaymarchResult {
     dist: f32,
@@ -143,47 +150,53 @@ fn henyey_greenstein(ray_dot_sun: f32, g: f32) -> f32 {
     return (1.0 - g_squared) / pow(1.0 + g_squared - 2.0 * g * ray_dot_sun, 1.5);
 }
 
-fn raymarch(_ray_origin: vec3f, ray_dir: vec3f, max_dist: f32) -> RaymarchResult {
-    if (ray_dir.y < 0.0) {
-        return RaymarchResult(max_dist, vec4f(0.0, 0.0, 0.0, 1.0));
+fn get_ray(ray_origin: vec3f, ray_dir: vec3f, max_dist: f32) -> Ray {
+    var start = intersect_planet_sphere(ray_dir, config.clouds_bottom_height);
+    var end = intersect_planet_sphere(ray_dir, config.clouds_top_height);
+    var inside = intersect_planet_sphere(ray_dir, ray_origin.y - config.planet_radius);
+
+    if (start <= inside && inside <= end) {
+        return Ray(0.0, 0.0, 0.0);
+        if (ray_dir.y < 0.0) {
+            end = inside;
+        } else {
+            start = inside;
+        }
     }
 
-    let ray_origin = vec3f(
-        _ray_origin.x,
-        config.planet_radius - _ray_origin.y,
-        _ray_origin.z
-    );
-
-    let start = intersect_planet_sphere(ray_dir, config.clouds_bottom_height);
-    let end = min(intersect_planet_sphere(ray_dir, config.clouds_top_height), max_dist);
-
-    if (start > max_dist) {
-        return RaymarchResult(max_dist, vec4f(0.0, 0.0, 0.0, 1.0));
-    }
-
-    let ray_dot_sun = dot(ray_dir, -config.sun_dir.xyz);
+    end = min(end, max_dist);
 
     let step_distance = (end - start) / f32(config.clouds_raymarch_steps_count);
     let hashed_offset = common::hash13(ray_dir + fract(config.time));
     var dir_length = start - step_distance * hashed_offset;
 
+    return Ray(step_distance, dir_length, start);
+}
+
+fn raymarch(ray_origin: vec3f, ray_dir: vec3f, max_dist: f32) -> RaymarchResult {
+    let ray = get_ray(ray_origin, ray_dir, max_dist);
+
+    if (ray.start > max_dist) {
+        return RaymarchResult(max_dist, vec4f(0.0, 0.0, 0.0, 1.0));
+    }
+
     // Frostbite: dual-lobe phase function
+    let ray_dot_sun = dot(ray_dir, -config.sun_dir.xyz);
     let scattering = mix(
         henyey_greenstein(ray_dot_sun, config.forward_scattering_g),
         henyey_greenstein(ray_dot_sun, config.backward_scattering_g),
         config.scattering_lerp
     );
 
+    var dir_length = ray.dir_length;
+    var dist = max_dist;
     var scattered_light = vec3f(0.0, 0.0, 0.0);
     var transmittance = 1.0;
-
-    var dist = config.planet_radius;
 
     for (var step: u32 = 0; step < config.clouds_raymarch_steps_count; step++) {
         let world_position = ray_origin + dir_length * ray_dir;
 
         let normalized_height = clamp(get_normalized_height(world_position), 0.0, 1.0);
-
         let clouds_density_sampled = get_cloud_map_density(world_position, normalized_height);
 
         if (clouds_density_sampled > 0.0) {
@@ -200,7 +213,7 @@ fn raymarch(_ray_origin: vec3f, ray_dir: vec3f, max_dist: f32) -> RaymarchResult
                 ambient_light.rgb +
                 config.sun_color.rgb * scattering * volumetric_shadow(world_position, ray_dot_sun)
             );
-            let delta_transmittance = exp(-clouds_density_sampled * step_distance);
+            let delta_transmittance = exp(-clouds_density_sampled * ray.step_distance);
             let integrated_scattering = S * (1.0 - delta_transmittance) / clouds_density_sampled;
 
             scattered_light += transmittance * integrated_scattering;
@@ -209,7 +222,7 @@ fn raymarch(_ray_origin: vec3f, ray_dir: vec3f, max_dist: f32) -> RaymarchResult
 
         if transmittance <= config.clouds_min_transmittance { break; }
 
-        dir_length += step_distance;
+        dir_length += ray.step_distance;
     }
 
     return RaymarchResult(dist, vec4f(scattered_light, transmittance));
@@ -276,7 +289,7 @@ fn get_clouds_color(frag_coord: vec2f, camera: mat4x4f, old_cam: mat4x4f, ray_di
         return common::save_camera(camera, frag_coord, ray_origin);
     }
 
-    let result = raymarch(ray_origin, ray_dir, 1e9);
+    let result = raymarch(ray_origin, ray_dir, MAX_DISTANCE);
     let transmittance = result.color.a;
 
     let fog_falloff = 1.0e-4;
@@ -293,10 +306,12 @@ fn get_clouds_color(frag_coord: vec2f, camera: mat4x4f, old_cam: mat4x4f, ray_di
 
     // For now, just don't mix two frames when camera transform changed too much.
     // TODO: properly reproject old frame's reprojected pixel onto current frame.
-    if length(abs(old_cam[0] - camera[0])) > EPSILON ||
-        length(abs(old_cam[1] - camera[1])) > EPSILON ||
-        length(abs(old_cam[2] - camera[2])) > EPSILON ||
-        length(abs(old_cam[3] - camera[3])) > EPSILON {
+    if length(
+        abs(old_cam[0] - camera[0]) +
+        abs(old_cam[1] - camera[1]) +
+        abs(old_cam[2] - camera[2]) +
+        abs(old_cam[3] - camera[3])
+    ) > EPSILON {
         return col;
     }
 
@@ -309,7 +324,11 @@ fn get_clouds_color(frag_coord: vec2f, camera: mat4x4f, old_cam: mat4x4f, ray_di
 }
 
 fn get_ray_origin(time: f32) -> vec3f {
-    return config.camera_translation - config.wind_displacement;
+    return (
+        config.camera_translation -
+        config.wind_displacement +
+        vec3f(0.0, config.planet_radius, 0.0)
+    );
 }
 
 fn get_ray_direction(frag_coord: vec2f) -> vec3f {
