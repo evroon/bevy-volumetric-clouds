@@ -38,7 +38,6 @@ bevy = { version = "0.17.3", default-features = false, features = [
   "x11",
   "zstd_rust",
 ] }
-wayland-sys = { version = "0.31.7", features = ["dlopen"] }
 
 # Optional
 bevy_egui = { version = "0.38.0", default-features = false, optional = true, features = [
