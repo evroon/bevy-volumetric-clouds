@@ -45,6 +45,9 @@ and use a UI to change the configuration of the cloud rendering
 cargo run --example demo --features fly_camera,debug
 ```
 
+The configuration of the clouds rendering can be changed using the `CloudsConfig` resource.
+See [its docs](https://docs.rs/bevy-volumetric-clouds/latest/bevy_volumetric_clouds/config/struct.CloudsConfig.html) for more information.
+
 ## Limitations
 
 A few limitations apply for now and hopefully get fixed in the future:

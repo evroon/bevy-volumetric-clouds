@@ -1,4 +1,4 @@
-/// Camera movement logic based on <https://github.com/mcpar-land/bevy_fly_camera>
+//! Camera movement logic based on <https://github.com/mcpar-land/bevy_fly_camera>
 use bevy::{
     input::mouse::MouseMotion,
     prelude::*,
