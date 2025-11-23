@@ -14,24 +14,26 @@ pub struct FlyCam;
 /// Keyboard is used for moving the camera around.
 #[derive(Resource)]
 pub struct KeyBindings {
-    /// The [`KeyCode`] that increases the speed of the movement of the camera.
+    /// The [`KeyCode`] that increases the speed of the movement of the camera
+    /// (default: [`KeyCode::Digit2`]).
     pub speed_increase: KeyCode,
-    /// The [`KeyCode`] that decreases the speed of the movement of the camera.
+    /// The [`KeyCode`] that decreases the speed of the movement of the camera
+    /// (default: [`KeyCode::Digit1`]).
     pub speed_decrease: KeyCode,
-    /// The [`KeyCode`] that moves the camera forward.
+    /// The [`KeyCode`] that moves the camera forward (default: [`KeyCode::KeyW`]).
     pub move_forward: KeyCode,
-    /// The [`KeyCode`] that moves the camera backward.
+    /// The [`KeyCode`] that moves the camera backward (default: [`KeyCode::KeyS`]).
     pub move_backward: KeyCode,
-    /// The [`KeyCode`] that moves the camera left.
+    /// The [`KeyCode`] that moves the camera left (default: [`KeyCode::KeyA`]).
     pub move_left: KeyCode,
-    /// The [`KeyCode`] that moves the camera right.
+    /// The [`KeyCode`] that moves the camera right (default: [`KeyCode::KeyD`]).
     pub move_right: KeyCode,
-    /// The [`KeyCode`] that moves the camera upward.
+    /// The [`KeyCode`] that moves the camera upward (default: [`KeyCode::KeyR`]).
     pub move_ascend: KeyCode,
-    /// The [`KeyCode`] that moves the camera downward.
+    /// The [`KeyCode`] that moves the camera downward (default: [`KeyCode::KeyF`]).
     pub move_descend: KeyCode,
     /// The [`KeyCode`] that toggles between mouse (rotational) and keyboard (translational)
-    /// control.
+    /// control (default: [`KeyCode::Space`]).
     pub toggle_grab_cursor: KeyCode,
 }
 
@@ -44,8 +46,8 @@ impl Default for KeyBindings {
             move_backward: KeyCode::KeyS,
             move_left: KeyCode::KeyA,
             move_right: KeyCode::KeyD,
-            move_ascend: KeyCode::Space,
-            move_descend: KeyCode::ShiftLeft,
+            move_ascend: KeyCode::KeyR,
+            move_descend: KeyCode::KeyF,
             toggle_grab_cursor: KeyCode::Space,
         }
     }
