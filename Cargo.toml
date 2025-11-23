@@ -15,7 +15,7 @@ categories = ["game-development"]
 all-features = true
 
 [features]
-dev = ["bevy/dynamic_linking", "bevy/file_watcher", "bevy/embedded_watcher", "fly_camera"]
+dev = ["bevy/dynamic_linking", "bevy/file_watcher", "bevy/embedded_watcher"]
 debug = ["bevy/debug", "bevy_egui", "bevy/bevy_text"]
 fly_camera = ["bevy/bevy_text", "bevy/bevy_ui", "bevy/bevy_ui_render", "bevy/default_font"]
 

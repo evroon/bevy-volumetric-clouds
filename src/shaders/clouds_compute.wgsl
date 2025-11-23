@@ -156,7 +156,6 @@ fn get_ray(ray_origin: vec3f, ray_dir: vec3f, max_dist: f32) -> Ray {
     var inside = intersect_planet_sphere(ray_dir, ray_origin.y - config.planet_radius);
 
     if (start <= inside && inside <= end) {
-        return Ray(0.0, 0.0, 0.0);
         if (ray_dir.y < 0.0) {
             end = inside;
         } else {
