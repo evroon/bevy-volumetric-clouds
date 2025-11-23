@@ -3,7 +3,7 @@ use bevy::prelude::*;
 #[derive(Resource, Clone, Copy)]
 /// The configuration that gets passed to the compute shader that renders the clouds.
 ///
-/// The resource gets added automatically by CloudsPlugin. However, you can overwrite it
+/// The resource gets added automatically by `CloudsPlugin`. However, you can overwrite it
 /// by inserting a new instance of it.
 ///
 /// # Example
