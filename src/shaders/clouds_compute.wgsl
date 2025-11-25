@@ -370,7 +370,13 @@ fn update(@builtin(global_invocation_id) invocation_id: vec3<u32>, @builtin(num_
     let index = vec2f(f32(invocation_id.x), f32(invocation_id.y)) + vec2f(0.5);
 
     // Load old camera matrix before storageBarrier to prevent race conditions;
-    let old_cam = common::load_camera(clouds_render_texture, u32(config.render_resolution.y) - 1);
+    let sample_y = u32(config.render_resolution.y) - 1;
+    let old_cam = mat4x4f(
+        textureLoad(clouds_render_texture, vec2u(1, sample_y)),
+        textureLoad(clouds_render_texture, vec2u(2, sample_y)),
+        textureLoad(clouds_render_texture, vec2u(3, sample_y)),
+        textureLoad(clouds_render_texture, vec2u(4, sample_y)),
+    );
     var frag_coord = vec2f(index.x, config.render_resolution.y - index.y);
 
     var ray_origin = get_ray_origin(config.time);

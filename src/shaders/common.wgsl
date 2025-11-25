@@ -27,15 +27,6 @@ fn save_camera(camera: mat4x4f, frag_coord: vec2f, ray_origin: vec3f) -> vec4f {
     return vec4f(0.0);
 }
 
-fn load_camera(texture: texture_storage_2d<rgba32float, read_write>, sample_y: u32) -> mat4x4f {
-    return mat4x4f(
-        textureLoad(texture, vec2u(1, sample_y)),
-        textureLoad(texture, vec2u(2, sample_y)),
-        textureLoad(texture, vec2u(3, sample_y)),
-        textureLoad(texture, vec2u(4, sample_y)),
-    );
-}
-
 // Noise functions
 //
 // Hash without Sine by Dave Hoskins
