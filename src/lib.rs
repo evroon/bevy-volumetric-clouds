@@ -40,7 +40,11 @@ impl Plugin for CloudsPlugin {
         app.insert_resource(CloudsConfig::default())
             .add_plugins((CloudsComputePlugin, CloudsShaderPlugin))
             .add_systems(Startup, (clouds_setup, setup_daylight))
-            .add_systems(Update, (update_skybox_transform, update_camera_matrices));
+            .add_systems(
+                PostUpdate,
+                (update_skybox_transform, update_camera_matrices)
+                    .after(TransformSystems::Propagate),
+            );
         #[cfg(feature = "debug")]
         app.add_systems(EguiPrimaryContextPass, ui_system);
     }
