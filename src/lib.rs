@@ -43,7 +43,7 @@ impl Plugin for CloudsPlugin {
             .add_systems(
                 PostUpdate,
                 (update_skybox_transform, update_camera_matrices)
-                    .after(bevy::transform::TransformSystems::Propagate),
+                    .after(TransformSystems::Propagate),
             );
         #[cfg(feature = "debug")]
         app.add_systems(EguiPrimaryContextPass, ui_system);
