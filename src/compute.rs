@@ -8,9 +8,10 @@ use bevy::{
         render_asset::RenderAssets,
         render_graph::{Node, NodeRunError, RenderGraph, RenderGraphContext, RenderLabel},
         render_resource::{
-            AsBindGroup, BindGroup, BindGroupEntries, BindGroupLayout, BindGroupLayoutEntries,
-            CachedComputePipelineId, CachedPipelineState, ComputePassDescriptor,
-            ComputePipelineDescriptor, PipelineCache, ShaderStages, binding_types::uniform_buffer,
+            AsBindGroup, BindGroup, BindGroupEntries, BindGroupLayoutDescriptor,
+            BindGroupLayoutEntries, CachedComputePipelineId, CachedPipelineState,
+            ComputePassDescriptor, ComputePipelineDescriptor, PipelineCache, ShaderStages,
+            binding_types::uniform_buffer,
         },
         renderer::{RenderContext, RenderDevice, RenderQueue},
         texture::GpuImage,
@@ -45,6 +46,7 @@ struct CloudsImageBindGroup(BindGroup);
 fn prepare_uniforms_bind_group(
     mut commands: Commands,
     pipeline: Res<CloudsPipeline>,
+    pipeline_cache: Res<PipelineCache>,
     render_queue: Res<RenderQueue>,
     mut clouds_uniform_buffer: ResMut<CloudsUniformBuffer>,
     camera: ResMut<CameraMatrices>,
@@ -90,7 +92,7 @@ fn prepare_uniforms_bind_group(
 
     let bind_group_uniforms = render_device.create_bind_group(
         None,
-        &pipeline.uniform_bind_group_layout,
+        &pipeline_cache.get_bind_group_layout(&pipeline.uniform_bind_group_layout),
         &BindGroupEntries::single(clouds_uniform_buffer.buffer.binding().unwrap().clone()),
     );
     commands.insert_resource(CloudsUniformBindGroup(bind_group_uniforms));
@@ -99,6 +101,7 @@ fn prepare_uniforms_bind_group(
 fn prepare_textures_bind_group(
     mut commands: Commands,
     pipeline: Res<CloudsPipeline>,
+    pipeline_cache: Res<PipelineCache>,
     gpu_images: Res<RenderAssets<GpuImage>>,
     clouds_image: Res<CloudsImage>,
     render_device: Res<RenderDevice>,
@@ -110,7 +113,7 @@ fn prepare_textures_bind_group(
 
     let bind_group = render_device.create_bind_group(
         None,
-        &pipeline.texture_bind_group_layout,
+        &pipeline_cache.get_bind_group_layout(&pipeline.texture_bind_group_layout),
         &BindGroupEntries::sequential((
             &cloud_render_view.texture_view,
             &cloud_atlas_view.texture_view,
@@ -127,8 +130,8 @@ fn prepare_textures_bind_group(
 /// that plugin.
 #[derive(Resource)]
 struct CloudsPipeline {
-    texture_bind_group_layout: BindGroupLayout,
-    uniform_bind_group_layout: BindGroupLayout,
+    texture_bind_group_layout: BindGroupLayoutDescriptor,
+    uniform_bind_group_layout: BindGroupLayoutDescriptor,
     init_pipeline: CachedComputePipelineId,
     update_pipeline: CachedComputePipelineId,
 }
@@ -136,7 +139,7 @@ struct CloudsPipeline {
 impl FromWorld for CloudsPipeline {
     fn from_world(world: &mut World) -> Self {
         let render_device = world.resource::<RenderDevice>();
-        let texture_bind_group_layout = CloudsImage::bind_group_layout(render_device);
+        let texture_bind_group_layout = CloudsImage::bind_group_layout_descriptor(render_device);
         let shader = load_embedded_asset!(world, "shaders/clouds_compute.wgsl");
         let pipeline_cache = world.resource::<PipelineCache>();
 
@@ -146,7 +149,7 @@ impl FromWorld for CloudsPipeline {
         );
 
         let uniform_bind_group_layout =
-            render_device.create_bind_group_layout("uniform_bind_group_layout", &entries);
+            BindGroupLayoutDescriptor::new("uniform_bind_group_layout", &entries);
 
         let init_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             zero_initialize_workgroup_memory: false,
