@@ -71,6 +71,7 @@ There are a few features:
 
 | bevy | bevy-volumetric-clouds |
 |------|------------------------|
+| 0.18 | 0.2.*                  |
 | 0.17 | 0.1.*                  |
 
 ## Credits
