@@ -6,9 +6,9 @@ use bevy::prelude::*;
 use bevy::render::view::Hdr;
 #[cfg(feature = "debug")]
 use bevy_egui::EguiPlugin;
-use bevy_volumetric_clouds::CloudsPlugin;
 #[cfg(feature = "fly_camera")]
 use bevy_volumetric_clouds::fly_camera::{FlyCam, FlyCameraPlugin};
+use bevy_volumetric_clouds::{CloudCamera, CloudsPlugin};
 
 fn close_on_esc(
     mut commands: Commands,
@@ -45,6 +45,7 @@ fn setup(
     commands.spawn((
         Camera3d::default(),
         Hdr,
+        CloudCamera,
         #[cfg(feature = "fly_camera")]
         FlyCam,
         Transform::from_translation(Vec3::new(0.0, 3.0, 0.0)).looking_to(Vec3::X, Vec3::Y),

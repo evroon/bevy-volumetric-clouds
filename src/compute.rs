@@ -1,12 +1,17 @@
 use bevy::{
     asset::load_embedded_asset,
+    camera::CameraProjection,
+    core_pipeline::core_3d::graph::{Core3d, Node3d},
     ecs::system::ResMut,
     prelude::*,
     render::{
         Extract, Render, RenderApp, RenderSystems,
+        extract_component::ExtractComponentPlugin,
         extract_resource::ExtractResourcePlugin,
         render_asset::RenderAssets,
-        render_graph::{Node, NodeRunError, RenderGraph, RenderGraphContext, RenderLabel},
+        render_graph::{
+            NodeRunError, RenderGraphContext, RenderGraphExt, RenderLabel, ViewNode, ViewNodeRunner,
+        },
         render_resource::{
             AsBindGroup, BindGroup, BindGroupEntries, BindGroupLayoutDescriptor,
             BindGroupLayoutEntries, CachedComputePipelineId, CachedPipelineState,
@@ -20,7 +25,7 @@ use bevy::{
 /// Controls the compute shader which renders the volumetric clouds.
 use std::borrow::Cow;
 
-use crate::config::CloudsConfig;
+use crate::{CloudCamera, config::CloudsConfig};
 
 use super::{
     images::IMAGE_SIZE,
@@ -49,11 +54,12 @@ fn prepare_uniforms_bind_group(
     pipeline_cache: Res<PipelineCache>,
     render_queue: Res<RenderQueue>,
     mut clouds_uniform_buffer: ResMut<CloudsUniformBuffer>,
-    camera: ResMut<CameraMatrices>,
+    camera: Option<Res<CameraMatrices>>,
     clouds_config: Res<CloudsConfig>,
     render_device: Res<RenderDevice>,
     time: Res<Time>,
 ) {
+    let camera = camera.expect("No camera with CloudCamera component found.");
     let buffer = clouds_uniform_buffer.buffer.get_mut();
 
     buffer.clouds_raymarch_steps_count = clouds_config.clouds_raymarch_steps_count;
@@ -203,27 +209,25 @@ impl Default for CloudsNode {
     }
 }
 
-impl Node for CloudsNode {
+impl ViewNode for CloudsNode {
+    type ViewQuery = Has<CloudCamera>;
+
     fn update(&mut self, world: &mut World) {
         let pipeline = world.resource::<CloudsPipeline>();
-        let pipeline_cache = world.resource::<PipelineCache>();
+        let cache = world.resource::<PipelineCache>();
 
         // if the corresponding pipeline has loaded, transition to the next stage
         match self.state {
             CloudsState::Loading => {
-                if let CachedPipelineState::Ok(_) =
-                    pipeline_cache.get_compute_pipeline_state(pipeline.init_pipeline)
-                {
-                    self.state = CloudsState::Init;
+                match cache.get_compute_pipeline_state(pipeline.init_pipeline) {
+                    CachedPipelineState::Ok(_) => self.state = CloudsState::Init,
+                    _ => {}
                 }
             }
-            CloudsState::Init => {
-                if let CachedPipelineState::Ok(_) =
-                    pipeline_cache.get_compute_pipeline_state(pipeline.update_pipeline)
-                {
-                    self.state = CloudsState::Update;
-                }
-            }
+            CloudsState::Init => match cache.get_compute_pipeline_state(pipeline.update_pipeline) {
+                CachedPipelineState::Ok(_) => self.state = CloudsState::Update,
+                _ => {}
+            },
             CloudsState::Update => {}
         }
     }
@@ -232,8 +236,12 @@ impl Node for CloudsNode {
         &self,
         _graph: &mut RenderGraphContext,
         render_context: &mut RenderContext,
+        is_cloud_camera: bool,
         world: &World,
     ) -> Result<(), NodeRunError> {
+        if !is_cloud_camera {
+            return Ok(());
+        }
         let texture_bind_group = &world.resource::<CloudsImageBindGroup>().0;
         let uniform_bind_group = &world.resource::<CloudsUniformBindGroup>().0;
         let pipeline_cache = world.resource::<PipelineCache>();
@@ -245,32 +253,14 @@ impl Node for CloudsNode {
 
         pass.set_bind_group(0, uniform_bind_group, &[]);
         pass.set_bind_group(1, texture_bind_group, &[]);
-
-        match self.state {
-            CloudsState::Loading => {}
-            CloudsState::Init => {
-                let init_pipeline = pipeline_cache
-                    .get_compute_pipeline(pipeline.init_pipeline)
-                    .unwrap();
-                pass.set_pipeline(init_pipeline);
-                pass.dispatch_workgroups(
-                    IMAGE_SIZE / WORKGROUP_SIZE,
-                    IMAGE_SIZE / WORKGROUP_SIZE,
-                    1,
-                );
-            }
-            CloudsState::Update => {
-                let update_pipeline = pipeline_cache
-                    .get_compute_pipeline(pipeline.update_pipeline)
-                    .unwrap();
-                pass.set_pipeline(update_pipeline);
-                pass.dispatch_workgroups(
-                    IMAGE_SIZE / WORKGROUP_SIZE,
-                    IMAGE_SIZE / WORKGROUP_SIZE,
-                    1,
-                );
-            }
-        }
+        let compute = match self.state {
+            CloudsState::Init => pipeline.init_pipeline,
+            CloudsState::Update => pipeline.update_pipeline,
+            _ => return Ok(()),
+        };
+        let pipeline = pipeline_cache.get_compute_pipeline(compute).unwrap();
+        pass.set_pipeline(pipeline);
+        pass.dispatch_workgroups(IMAGE_SIZE / WORKGROUP_SIZE, IMAGE_SIZE / WORKGROUP_SIZE, 1);
         Ok(())
     }
 }
@@ -285,7 +275,7 @@ impl Plugin for CloudsComputePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(ExtractResourcePlugin::<CloudsImage>::default());
         app.add_plugins(ExtractResourcePlugin::<CloudsUniform>::default());
-
+        app.add_plugins(ExtractComponentPlugin::<CloudCamera>::default());
         let render_app = app.sub_app_mut(RenderApp);
         render_app.add_systems(
             Render,
@@ -295,11 +285,8 @@ impl Plugin for CloudsComputePlugin {
             Render,
             prepare_uniforms_bind_group.in_set(RenderSystems::PrepareResources),
         );
-
-        let mut render_graph = render_app.world_mut().resource_mut::<RenderGraph>();
-        render_graph.add_node(CloudsLabel, CloudsNode::default());
-        render_graph.add_node_edge(CloudsLabel, bevy::render::graph::CameraDriverLabel);
-
+        render_app.add_render_graph_node::<ViewNodeRunner<CloudsNode>>(Core3d, CloudsLabel);
+        render_app.add_render_graph_edge(Core3d, Node3d::EndMainPass, CloudsLabel);
         render_app.add_systems(
             ExtractSchedule,
             (extract_clouds_config, extract_time, extract_camera_matrices),
@@ -321,6 +308,18 @@ fn extract_time(mut commands: Commands, time: Extract<Res<Time>>) {
     commands.insert_resource(**time);
 }
 
-fn extract_camera_matrices(mut commands: Commands, camera: Extract<Res<CameraMatrices>>) {
-    commands.insert_resource(**camera);
+fn extract_camera_matrices(
+    mut commands: Commands,
+    camera: Extract<Single<(&GlobalTransform, &Projection), With<CloudCamera>>>,
+) {
+    let proj: Mat4 = match camera.1 {
+        Projection::Perspective(p) => p.get_clip_from_view(),
+        Projection::Orthographic(o) => o.get_clip_from_view(),
+        Projection::Custom(c) => c.get_clip_from_view(),
+    };
+    commands.insert_resource(CameraMatrices {
+        translation: camera.0.translation(),
+        inverse_camera_view: camera.0.to_matrix(),
+        inverse_camera_projection: proj.inverse(),
+    });
 }

@@ -35,6 +35,11 @@ use bevy_volumetric_clouds::CloudsPlugin;
 app.add_plugins(CloudsPlugin);
 ```
 
+Then add `CloudCamera` component to the camera that should have clouds.
+```rust
+commands.spawn((Camera3d::default(), Hdr, CloudCamera));
+```
+
 Look at [the minimal example](examples/minimal.rs) for a working example.
 
 The [the demo example](examples/demo.rs) features a usable demo where you can move the camera around
