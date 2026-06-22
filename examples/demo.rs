@@ -2,8 +2,8 @@
 //!
 //! - Enable the `fly_camera` feature to be able to control the camera with keyboard and mouse.
 //! - Enable the `debug` feature to be able to control the clouds settings using an `egui` UI.
+use bevy::camera::Hdr;
 use bevy::prelude::*;
-use bevy::render::view::Hdr;
 #[cfg(feature = "debug")]
 use bevy_egui::EguiPlugin;
 use bevy_volumetric_clouds::CloudsPlugin;
