@@ -6,14 +6,13 @@ use bevy::{
         Extract, Render, RenderApp, RenderSystems,
         extract_resource::ExtractResourcePlugin,
         render_asset::RenderAssets,
-        render_graph::{Node, NodeRunError, RenderGraph, RenderGraphContext, RenderLabel},
         render_resource::{
             AsBindGroup, BindGroup, BindGroupEntries, BindGroupLayoutDescriptor,
             BindGroupLayoutEntries, CachedComputePipelineId, CachedPipelineState,
             ComputePassDescriptor, ComputePipelineDescriptor, PipelineCache, ShaderStages,
             binding_types::uniform_buffer,
         },
-        renderer::{RenderContext, RenderDevice, RenderQueue},
+        renderer::{RenderContext, RenderDevice, RenderGraph, RenderGraphSystems, RenderQueue},
         texture::GpuImage,
     },
 };
@@ -158,7 +157,7 @@ impl FromWorld for CloudsPipeline {
                 uniform_bind_group_layout.clone(),
                 texture_bind_group_layout.clone(),
             ],
-            push_constant_ranges: Vec::new(),
+            immediate_size: 0,
             shader: shader.clone(),
             shader_defs: vec![],
             entry_point: Some(Cow::from("init")),
@@ -170,7 +169,7 @@ impl FromWorld for CloudsPipeline {
                 uniform_bind_group_layout.clone(),
                 texture_bind_group_layout.clone(),
             ],
-            push_constant_ranges: Vec::new(),
+            immediate_size: 0,
             shader,
             shader_defs: vec![],
             entry_point: Some(Cow::from("update")),
@@ -185,101 +184,66 @@ impl FromWorld for CloudsPipeline {
     }
 }
 
+#[derive(Resource, Default)]
 enum CloudsState {
+    #[default]
     Loading,
     Init,
     Update,
 }
 
-struct CloudsNode {
-    state: CloudsState,
-}
+fn run_clouds_compute_pass(
+    mut state: ResMut<CloudsState>,
+    pipeline_cache: Res<PipelineCache>,
+    pipeline: Res<CloudsPipeline>,
+    texture_bind_group: Option<Res<CloudsImageBindGroup>>,
+    uniform_bind_group: Option<Res<CloudsUniformBindGroup>>,
+    mut render_context: RenderContext,
+) {
+    let Some(texture_bind_group) = texture_bind_group else {
+        return;
+    };
+    let Some(uniform_bind_group) = uniform_bind_group else {
+        return;
+    };
 
-impl Default for CloudsNode {
-    fn default() -> Self {
-        Self {
-            state: CloudsState::Loading,
+    let pipeline_to_run = match *state {
+        CloudsState::Loading => {
+            if let CachedPipelineState::Ok(_) =
+                pipeline_cache.get_compute_pipeline_state(pipeline.init_pipeline)
+            {
+                *state = CloudsState::Init;
+            } else {
+                return;
+            }
+            pipeline.init_pipeline
         }
-    }
-}
-
-impl Node for CloudsNode {
-    fn update(&mut self, world: &mut World) {
-        let pipeline = world.resource::<CloudsPipeline>();
-        let pipeline_cache = world.resource::<PipelineCache>();
-
-        // if the corresponding pipeline has loaded, transition to the next stage
-        match self.state {
-            CloudsState::Loading => {
-                if let CachedPipelineState::Ok(_) =
-                    pipeline_cache.get_compute_pipeline_state(pipeline.init_pipeline)
-                {
-                    self.state = CloudsState::Init;
-                }
+        CloudsState::Init => {
+            if let CachedPipelineState::Ok(_) =
+                pipeline_cache.get_compute_pipeline_state(pipeline.update_pipeline)
+            {
+                *state = CloudsState::Update;
             }
-            CloudsState::Init => {
-                if let CachedPipelineState::Ok(_) =
-                    pipeline_cache.get_compute_pipeline_state(pipeline.update_pipeline)
-                {
-                    self.state = CloudsState::Update;
-                }
-            }
-            CloudsState::Update => {}
+            pipeline.init_pipeline
         }
-    }
+        CloudsState::Update => pipeline.update_pipeline,
+    };
 
-    fn run(
-        &self,
-        _graph: &mut RenderGraphContext,
-        render_context: &mut RenderContext,
-        world: &World,
-    ) -> Result<(), NodeRunError> {
-        let texture_bind_group = &world.resource::<CloudsImageBindGroup>().0;
-        let uniform_bind_group = &world.resource::<CloudsUniformBindGroup>().0;
-        let pipeline_cache = world.resource::<PipelineCache>();
-        let pipeline = world.resource::<CloudsPipeline>();
+    let Some(compute_pipeline) = pipeline_cache.get_compute_pipeline(pipeline_to_run) else {
+        return;
+    };
 
-        let mut pass = render_context
-            .command_encoder()
-            .begin_compute_pass(&ComputePassDescriptor::default());
-
-        pass.set_bind_group(0, uniform_bind_group, &[]);
-        pass.set_bind_group(1, texture_bind_group, &[]);
-
-        match self.state {
-            CloudsState::Loading => {}
-            CloudsState::Init => {
-                let init_pipeline = pipeline_cache
-                    .get_compute_pipeline(pipeline.init_pipeline)
-                    .unwrap();
-                pass.set_pipeline(init_pipeline);
-                pass.dispatch_workgroups(
-                    IMAGE_SIZE / WORKGROUP_SIZE,
-                    IMAGE_SIZE / WORKGROUP_SIZE,
-                    1,
-                );
-            }
-            CloudsState::Update => {
-                let update_pipeline = pipeline_cache
-                    .get_compute_pipeline(pipeline.update_pipeline)
-                    .unwrap();
-                pass.set_pipeline(update_pipeline);
-                pass.dispatch_workgroups(
-                    IMAGE_SIZE / WORKGROUP_SIZE,
-                    IMAGE_SIZE / WORKGROUP_SIZE,
-                    1,
-                );
-            }
-        }
-        Ok(())
-    }
+    let mut pass = render_context
+        .command_encoder()
+        .begin_compute_pass(&ComputePassDescriptor::default());
+    pass.set_bind_group(0, &uniform_bind_group.0, &[]);
+    pass.set_bind_group(1, &texture_bind_group.0, &[]);
+    pass.set_pipeline(compute_pipeline);
+    pass.dispatch_workgroups(IMAGE_SIZE / WORKGROUP_SIZE, IMAGE_SIZE / WORKGROUP_SIZE, 1);
 }
 
 /// A plugin for the compute shader which renders clouds.
 pub(crate) struct CloudsComputePlugin;
-
-#[derive(Debug, Hash, PartialEq, Eq, Clone, RenderLabel)]
-struct CloudsLabel;
 
 impl Plugin for CloudsComputePlugin {
     fn build(&self, app: &mut App) {
@@ -295,10 +259,10 @@ impl Plugin for CloudsComputePlugin {
             Render,
             prepare_uniforms_bind_group.in_set(RenderSystems::PrepareResources),
         );
-
-        let mut render_graph = render_app.world_mut().resource_mut::<RenderGraph>();
-        render_graph.add_node(CloudsLabel, CloudsNode::default());
-        render_graph.add_node_edge(CloudsLabel, bevy::render::graph::CameraDriverLabel);
+        render_app.add_systems(
+            RenderGraph,
+            run_clouds_compute_pass.in_set(RenderGraphSystems::Render),
+        );
 
         render_app.add_systems(
             ExtractSchedule,
@@ -310,6 +274,7 @@ impl Plugin for CloudsComputePlugin {
         let render_app = app.sub_app_mut(RenderApp);
         render_app.init_resource::<CloudsPipeline>();
         render_app.init_resource::<CloudsUniformBuffer>();
+        render_app.init_resource::<CloudsState>();
     }
 }
 
