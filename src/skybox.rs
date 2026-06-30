@@ -2,6 +2,8 @@ use core::f32::consts::PI;
 
 use bevy::{light::light_consts::lux::FULL_DAYLIGHT, prelude::*};
 
+use crate::CloudCamera;
+
 #[derive(Component)]
 pub(crate) struct SkyboxPlane {
     pub orig_translation: Vec3,
@@ -118,7 +120,10 @@ pub(crate) fn setup_daylight(mut commands: Commands) {
 }
 
 pub(crate) fn update_skybox_transform(
-    camera: Single<(&Transform, &Camera, &Projection), Without<SkyboxPlane>>,
+    camera: Single<
+        (&Transform, &Camera, &Projection),
+        (Without<SkyboxPlane>, With<CloudCamera>),
+    >,
     mut skybox: Query<(&mut Transform, &SkyboxPlane)>,
 ) {
     let far = match camera.2 {
