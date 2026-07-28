@@ -1,5 +1,5 @@
 //! A minimal example featuring clouds.
-use bevy::{prelude::*, render::view::Hdr};
+use bevy::{camera::Hdr, prelude::*};
 use bevy_volumetric_clouds::CloudsPlugin;
 
 fn main() {
