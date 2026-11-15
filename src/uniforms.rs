@@ -1,12 +1,14 @@
 use bevy::{
     prelude::*,
     render::{
+        RenderApp,
         extract_resource::ExtractResource,
         render_resource::{AsBindGroup, ShaderType, UniformBuffer},
     },
 };
 
 #[derive(Clone, Resource, ExtractResource, Reflect, ShaderType)]
+#[extract_app(RenderApp)]
 #[reflect(Resource, Default)]
 pub(crate) struct CloudsUniform {
     pub clouds_base_scale: f32,
@@ -82,6 +84,7 @@ pub(crate) struct CloudsUniformBuffer {
 }
 
 #[derive(Resource, Clone, ExtractResource, AsBindGroup)]
+#[extract_app(RenderApp)]
 pub(crate) struct CloudsImage {
     #[storage_texture(0, image_format = Rgba32Float, access = ReadWrite)]
     pub cloud_render_image: Handle<Image>,

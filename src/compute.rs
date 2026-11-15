@@ -161,6 +161,7 @@ impl FromWorld for CloudsPipeline {
             shader: shader.clone(),
             shader_defs: vec![],
             entry_point: Some(Cow::from("init")),
+            constants: vec![],
         });
         let update_pipeline = pipeline_cache.queue_compute_pipeline(ComputePipelineDescriptor {
             zero_initialize_workgroup_memory: false,
@@ -173,6 +174,7 @@ impl FromWorld for CloudsPipeline {
             shader,
             shader_defs: vec![],
             entry_point: Some(Cow::from("update")),
+            constants: vec![],
         });
 
         CloudsPipeline {
